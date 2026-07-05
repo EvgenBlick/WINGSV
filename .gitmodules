@@ -10,7 +10,8 @@
 	url = https://github.com/WINGS-N/libXray.git
 [submodule "external/Xray-core"]
 	path = external/Xray-core
-	url = https://github.com/WINGS-N/Xray-core.git
+	url = https://github.com/EvgenBlick/WINGSV-Xray-core.git
+	branch = s3xray/fedarisha-core
 [submodule "external/amneziawg-android"]
 	path = external/amneziawg-android
 	url = https://github.com/WINGS-N/amneziawg-android.git
