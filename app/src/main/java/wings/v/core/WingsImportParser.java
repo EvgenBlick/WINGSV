@@ -36,9 +36,10 @@ import wings.v.proto.WingsvProto;
 )
 public final class WingsImportParser {
 
-    private static final Pattern LINK_PATTERN = Pattern.compile("wingsv://[A-Za-z0-9_\\-+/=]+");
+    private static final Pattern LINK_PATTERN = Pattern.compile("(?:wingsv|s3x)://[A-Za-z0-9_\\-+/=]+");
     private static final Pattern SUBSCRIPTION_URL_PATTERN = Pattern.compile("https?://[^\\s\"']+");
     private static final String SCHEME_PREFIX = "wingsv://";
+    private static final String S3X_SCHEME_PREFIX = "s3x://";
     private static final int CURRENT_VERSION = 1;
     private static final byte FORMAT_PROTOBUF_DEFLATE = 0x12;
 
@@ -522,6 +523,10 @@ public final class WingsImportParser {
     }
 
     public static ImportedConfig parseFromText(String rawText) throws Exception {
+        ImportedConfig s3xImport = parseS3xImport(rawText);
+        if (s3xImport != null) {
+            return s3xImport;
+        }
         XrayProfile directProfile = VlessLinkParser.parseProfile(rawText, "", "");
         if (directProfile != null) {
             ImportedConfig directImport = new ImportedConfig();
@@ -590,10 +595,50 @@ public final class WingsImportParser {
         if (matcher.find()) {
             return matcher.group();
         }
-        if (rawText.startsWith(SCHEME_PREFIX)) {
+        if (rawText.startsWith(SCHEME_PREFIX) || rawText.startsWith(S3X_SCHEME_PREFIX)) {
             return rawText.trim();
         }
         return null;
+    }
+
+    private static ImportedConfig parseS3xImport(String rawText) {
+        String link = extractS3xLink(rawText);
+        if (TextUtils.isEmpty(link)) {
+            return null;
+        }
+        try {
+            String payload = link.substring(S3X_SCHEME_PREFIX.length()).trim();
+            byte[] decoded = Base64.decode(payload, Base64.URL_SAFE | Base64.NO_WRAP);
+            String json = new String(decoded, StandardCharsets.UTF_8);
+            List<XrayProfile> profiles = XraySubscriptionParser.parseProfiles(json, "", "");
+            if (profiles.isEmpty()) {
+                return null;
+            }
+            ImportedConfig directImport = new ImportedConfig();
+            directImport.backendType = BackendType.XRAY;
+            directImport.xrayMergeOnly = true;
+            directImport.xrayProfiles.addAll(profiles);
+            directImport.activeXrayProfileId = profiles.get(0).id;
+            directImport.xraySettings = defaultXraySettings();
+            return directImport;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private static String extractS3xLink(String rawText) {
+        if (TextUtils.isEmpty(rawText)) {
+            return null;
+        }
+        Matcher matcher = LINK_PATTERN.matcher(rawText);
+        while (matcher.find()) {
+            String match = matcher.group();
+            if (match.startsWith(S3X_SCHEME_PREFIX)) {
+                return match;
+            }
+        }
+        String trimmed = rawText.trim();
+        return trimmed.startsWith(S3X_SCHEME_PREFIX) ? trimmed : null;
     }
 
     /**

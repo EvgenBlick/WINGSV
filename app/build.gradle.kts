@@ -135,8 +135,18 @@ fun resolveAndroidNdkDir(): File {
 
 fun resolveVkTurnAndroidClang(): File {
     val ndkDir: File = resolveAndroidNdkDir()
-    val prebuilt: File = ndkDir.resolve("toolchains/llvm/prebuilt/linux-x86_64/bin")
-    val clang: File = prebuilt.resolve("aarch64-linux-android21-clang")
+    val hostTag: String = if (System.getProperty("os.name").contains("Windows", ignoreCase = true)) {
+        "windows-x86_64"
+    } else {
+        "linux-x86_64"
+    }
+    val clangName: String = if (hostTag.startsWith("windows")) {
+        "aarch64-linux-android21-clang.cmd"
+    } else {
+        "aarch64-linux-android21-clang"
+    }
+    val prebuilt: File = ndkDir.resolve("toolchains/llvm/prebuilt/$hostTag/bin")
+    val clang: File = prebuilt.resolve(clangName)
     return clang.takeIf { it.isFile }
         ?: error("Android clang not found at ${clang.absolutePath}")
 }
@@ -379,7 +389,7 @@ val buildLibXrayAndroidAar: TaskProvider<Exec> by tasks.registering(Exec::class)
                     append(File.pathSeparator)
                     append(File(resolveAndroidSdkDir(), "tools/bin").absolutePath)
                     append(File.pathSeparator)
-                    append(File(resolveAndroidNdkDir(), "toolchains/llvm/prebuilt/linux-x86_64/bin").absolutePath)
+                    append(File(resolveAndroidNdkDir(), "toolchains/llvm/prebuilt/${if (System.getProperty("os.name").contains("Windows", ignoreCase = true)) "windows-x86_64" else "linux-x86_64"}/bin").absolutePath)
                     append(File.pathSeparator)
                     append(libXrayGoBinDir.absolutePath)
                     append(File.pathSeparator)
@@ -406,11 +416,17 @@ val buildLibXrayAndroidAar: TaskProvider<Exec> by tasks.registering(Exec::class)
             }
             export GOPROXY=https://proxy.golang.org,direct
             rm -f libXray.aar libXray-sources.jar
-            retry python3 build/main.py android local
+            retry ${if (System.getProperty("os.name").contains("Windows", ignoreCase = true)) "python" else "python3"} build/main.py android local
             test -f libXray.aar
-            cp libXray.aar "${generatedLibXrayAar.get().absolutePath}"
             """.trimIndent()
         )
+    }
+
+    doLast {
+        copy {
+            from(File(generatedLibXrayWorkDir.get(), "libXray.aar"))
+            into(generatedLibXrayDir.get().asFile)
+        }
     }
 }
 
@@ -718,7 +734,6 @@ tasks.named("check") {
 dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.oneui.design)
-    implementation(libs.sesl.pickerBasic)
     implementation(libs.protobuf.javalite)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.tencent:mmkv:1.3.9")

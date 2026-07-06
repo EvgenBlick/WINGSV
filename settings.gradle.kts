@@ -19,8 +19,27 @@ plugins {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
+        maven {
+            url = uri("https://maven.google.com")
+            content {
+                includeGroupByRegex("androidx.*")
+                includeGroupByRegex("com\\.android.*")
+                includeGroupByRegex("com\\.google.*")
+            }
+        }
+        maven {
+            url = uri("https://maven.aliyun.com/repository/google")
+            content {
+                includeGroupByRegex("androidx.*")
+                includeGroupByRegex("com\\.android.*")
+                includeGroupByRegex("com\\.google.*")
+            }
+        }
         google()
         mavenCentral()
+        maven {
+            url = uri("https://maven.aliyun.com/repository/public")
+        }
         maven("https://jitpack.io")
 
         val seslUser = providers.gradleProperty("seslUser").orNull
@@ -33,6 +52,9 @@ dependencyResolutionManagement {
                     username = seslUser
                     password = seslToken
                 }
+                content {
+                    includeGroupByRegex("sesl\\.androidx.*")
+                }
             }
             maven {
                 url = uri("https://maven.pkg.github.com/tribalfs/sesl-material-components-android")
@@ -40,12 +62,18 @@ dependencyResolutionManagement {
                     username = seslUser
                     password = seslToken
                 }
+                content {
+                    includeGroup("sesl.com.google.android.material")
+                }
             }
             maven {
                 url = uri("https://maven.pkg.github.com/tribalfs/oneui-design")
                 credentials {
                     username = seslUser
                     password = seslToken
+                }
+                content {
+                    includeGroup("io.github.tribalfs")
                 }
             }
         }

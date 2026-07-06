@@ -7,8 +7,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.TimePicker;
 import androidx.annotation.Nullable;
-import androidx.picker.widget.SeslTimePicker;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.SwitchPreferenceCompat;
@@ -98,7 +98,7 @@ public class SubscriptionUpdateSettingsFragment extends PreferenceFragmentCompat
             false
         );
         FrameLayout pickerContainer = dialogView.findViewById(R.id.container_refresh_interval_picker);
-        SeslTimePicker timePicker = buildRefreshIntervalTimePicker(currentMinutes);
+        TimePicker timePicker = buildRefreshIntervalTimePicker(currentMinutes);
         pickerContainer.addView(timePicker);
         new AlertDialog.Builder(requireContext())
             .setTitle(R.string.xray_subscriptions_refresh_interval_title)
@@ -115,8 +115,8 @@ public class SubscriptionUpdateSettingsFragment extends PreferenceFragmentCompat
             .show();
     }
 
-    private SeslTimePicker buildRefreshIntervalTimePicker(int currentMinutes) {
-        SeslTimePicker timePicker = new SeslTimePicker(
+    private TimePicker buildRefreshIntervalTimePicker(int currentMinutes) {
+        TimePicker timePicker = new TimePicker(
             new ContextThemeWrapper(requireContext(), androidx.appcompat.R.style.Theme_AppCompat_DayNight)
         );
         FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(

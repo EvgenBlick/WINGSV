@@ -12,6 +12,10 @@ import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.jvm.tasks.Jar
 
+val skipHotspotNative: Boolean = providers.gradleProperty("s3xSkipHotspotNative")
+    .map(String::toBoolean)
+    .getOrElse(System.getProperty("os.name").contains("Windows", ignoreCase = true))
+
 abstract class BuildDaemonNativeLibsTask : DefaultTask() {
     @get:InputDirectory
     @get:PathSensitive(PathSensitivity.RELATIVE)
@@ -191,16 +195,18 @@ androidComponents {
         val ndkRootDir = ndkParent.listFiles()?.filter { it.isDirectory }
             ?.maxByOrNull { it.name }
             ?: error("No Android NDK installed under $ndkParent")
-        val daemonTask = tasks.register<BuildDaemonNativeLibsTask>("build${variantTitle}DaemonNativeLibs") {
-            sourceDir.set(layout.projectDirectory.dir("../../external/VPNHotspot/mobile/src/main/rust/vpnhotspotd"))
-            protoDir.set(layout.projectDirectory.dir("../../external/VPNHotspot/mobile/src/main/proto"))
-            cargoProfile.set(if (variant.buildType == "release") "release" else "debug")
-            androidPlatform.set(29)
-            outputDir.set(layout.buildDirectory.dir("generated/nativeLibs/daemon/${variant.name}"))
-            targetDir.set(layout.buildDirectory.dir("rust/vpnhotspotd"))
-            ndkRoot.set(ndkRootDir)
+        if (!skipHotspotNative) {
+            val daemonTask = tasks.register<BuildDaemonNativeLibsTask>("build${variantTitle}DaemonNativeLibs") {
+                sourceDir.set(layout.projectDirectory.dir("../../external/VPNHotspot/mobile/src/main/rust/vpnhotspotd"))
+                protoDir.set(layout.projectDirectory.dir("../../external/VPNHotspot/mobile/src/main/proto"))
+                cargoProfile.set(if (variant.buildType == "release") "release" else "debug")
+                androidPlatform.set(29)
+                outputDir.set(layout.buildDirectory.dir("generated/nativeLibs/daemon/${variant.name}"))
+                targetDir.set(layout.buildDirectory.dir("rust/vpnhotspotd"))
+                ndkRoot.set(ndkRootDir)
+            }
+            variant.sources.jniLibs?.addGeneratedSourceDirectory(daemonTask, BuildDaemonNativeLibsTask::outputDir)
         }
-        variant.sources.jniLibs?.addGeneratedSourceDirectory(daemonTask, BuildDaemonNativeLibsTask::outputDir)
     }
 }
 

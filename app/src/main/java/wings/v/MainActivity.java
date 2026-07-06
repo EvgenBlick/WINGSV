@@ -958,7 +958,7 @@ public class MainActivity extends AppCompatActivity {
         if (TextUtils.isEmpty(rawData)) {
             return false;
         }
-        return rawData.startsWith("wingsv://") || rawData.startsWith("vless://");
+        return rawData.startsWith("wingsv://") || rawData.startsWith("s3x://") || rawData.startsWith("vless://");
     }
 
     private void requestReconnectAfterImport(@Nullable String importedText) {
